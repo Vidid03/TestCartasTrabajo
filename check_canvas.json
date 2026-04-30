@@ -1,0 +1,1 @@
+{"csharpCode": "using UnityEngine; public class CheckCanvas { public static void Main() { Canvas canvas = Object.FindObjectOfType<Canvas>(); if (canvas == null) { Debug.LogError(\"No Canvas found\"); } else { Debug.Log(\"Canvas found: \" + canvas.name); } } }", "methodName": "Main", "className": "CheckCanvas"}

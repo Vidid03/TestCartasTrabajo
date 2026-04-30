@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    ".opencode/button-creation-guideline.md"
+  ],
+  "mcp": {
+    "ai-game-developer": {
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer 65FeS3mUTLB7uqCVSPNpIp2gNHsdwjLsxnLlpCMRnFg"
+      },
+      "type": "remote",
+      "url": "http://localhost:21741"
+    }
+  }
+}
