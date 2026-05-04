@@ -11,6 +11,13 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
     public float scaleMultiplier = 1.08f;
     public float liftAmount = 22f;
 
+    [Header("Idle Loop Rotation")]
+    [SerializeField] bool enableIdleLoopRotation = true;
+    [SerializeField] float idleMinRotationZ = -5f;
+    [SerializeField] float idleMaxRotationZ = 5f;
+    [SerializeField] float idleRandomThreshold = 2f;
+    [SerializeField] float idleDegreesPerSecond = 4f;
+
     RectTransform _rt;
     Vector2 _basePos;
     Vector3 _baseScale;
@@ -39,6 +46,13 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
     [SerializeField] Color defaultOutlineColor = Color.black;
     [SerializeField] Color selectedOutlineColor = Color.red;
 
+    float _idleRuntimeMinZ;
+    float _idleRuntimeMaxZ;
+    float _idleCurrentOffsetZ;
+    float _idleTargetOffsetZ;
+    float _idleAppliedZ;
+    bool _idleReady;
+
     public bool IsSelected => _isSelected;
 
     void Awake()
@@ -49,6 +63,7 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         _restSibling = _rt.GetSiblingIndex();
         _outline = GetComponent<Outline>();
         SetOutlineColor(defaultOutlineColor);
+        InitializeIdleRotation();
     }
 
     void OnEnable()
@@ -59,6 +74,7 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         _baseScale = _rt.localScale;
         _restSibling = _rt.GetSiblingIndex();
         SetOutlineColor(_isSelected ? selectedOutlineColor : defaultOutlineColor);
+        InitializeIdleRotation();
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -258,6 +274,39 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         _basePos = _rt.anchoredPosition;
         _baseScale = _rt.localScale;
         _restSibling = _rt.GetSiblingIndex();
+        _idleAppliedZ = NormalizeSignedAngle(_rt.localEulerAngles.z);
+    }
+
+    void InitializeIdleRotation()
+    {
+        if (_rt == null) return;
+
+        float threshold = Mathf.Max(0f, idleRandomThreshold);
+        float min = idleMinRotationZ + Random.Range(-threshold, threshold);
+        float max = idleMaxRotationZ + Random.Range(-threshold, threshold);
+
+        if (max < min)
+        {
+            float tmp = min;
+            min = max;
+            max = tmp;
+        }
+
+        if (Mathf.Abs(max - min) < 0.25f)
+            max = min + 0.25f;
+
+        _idleRuntimeMinZ = min;
+        _idleRuntimeMaxZ = max;
+        _idleCurrentOffsetZ = 0f;
+        _idleTargetOffsetZ = Random.value > 0.5f ? _idleRuntimeMaxZ : _idleRuntimeMinZ;
+        _idleAppliedZ = NormalizeSignedAngle(_rt.localEulerAngles.z);
+        _idleReady = true;
+    }
+
+    static float NormalizeSignedAngle(float z)
+    {
+        if (z > 180f) z -= 360f;
+        return z;
     }
 
     public static void ReorderGroup(Transform parent)
@@ -329,6 +378,33 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         {
             selected[i].SetSiblingIndex(idx++);
         }
+    }
+
+    void LateUpdate()
+    {
+        if (!enableIdleLoopRotation || _rt == null) return;
+        if (!_idleReady) InitializeIdleRotation();
+
+        float observedZ = NormalizeSignedAngle(_rt.localEulerAngles.z);
+        float baseZ = observedZ;
+
+        if (Mathf.Abs(Mathf.DeltaAngle(observedZ, _idleAppliedZ)) < 0.25f)
+            baseZ = NormalizeSignedAngle(observedZ - _idleCurrentOffsetZ);
+
+        float step = Mathf.Max(0.01f, idleDegreesPerSecond) * Time.unscaledDeltaTime;
+        _idleCurrentOffsetZ = Mathf.MoveTowards(_idleCurrentOffsetZ, _idleTargetOffsetZ, step);
+
+        if (Mathf.Abs(_idleCurrentOffsetZ - _idleTargetOffsetZ) <= 0.001f)
+        {
+            bool reachedMax = Mathf.Abs(_idleTargetOffsetZ - _idleRuntimeMaxZ) <= 0.01f;
+            _idleTargetOffsetZ = reachedMax ? _idleRuntimeMinZ : _idleRuntimeMaxZ;
+        }
+
+        float finalZ = baseZ + _idleCurrentOffsetZ;
+        var euler = _rt.localEulerAngles;
+        euler.z = finalZ;
+        _rt.localEulerAngles = euler;
+        _idleAppliedZ = NormalizeSignedAngle(finalZ);
     }
 
     void Update()
