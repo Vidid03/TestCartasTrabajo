@@ -448,5 +448,5 @@
   "timeoutMs": 10000,
   "keepConnected": true,
   "generateSkillFiles": false,
-  "skillsPath": "F:\\Test\\.opencode\\skills"
+  "skillsPath": "C:\\Titutitech\\TestCartasTrabajo\\.opencode\\skills"
 }

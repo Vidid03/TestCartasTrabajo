@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
+    const int MaxSelectableCardsPerGroup = 5;
+
     public RectTransform reference;
     public float hoverEnterDuration = 0.15f;
     public float hoverExitDuration = 0.1f;
@@ -41,10 +43,7 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
     bool _isHovered;
     bool _isSelected;
     bool _pointerInside;
-    Outline _outline;
-
-    [SerializeField] Color defaultOutlineColor = Color.black;
-    [SerializeField] Color selectedOutlineColor = Color.red;
+    PokerCardVisualConverter _pokerCardVisualConverter;
 
     float _idleRuntimeMinZ;
     float _idleRuntimeMaxZ;
@@ -58,28 +57,29 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
     void Awake()
     {
         _rt = transform as RectTransform;
+        _pokerCardVisualConverter = GetComponent<PokerCardVisualConverter>();
         _basePos = _rt.anchoredPosition;
         _baseScale = _rt.localScale;
         _restSibling = _rt.GetSiblingIndex();
-        _outline = GetComponent<Outline>();
-        SetOutlineColor(defaultOutlineColor);
         InitializeIdleRotation();
+        SyncSelectionOutline();
     }
 
     void OnEnable()
     {
         if (_rt == null) _rt = transform as RectTransform;
-        if (_outline == null) _outline = GetComponent<Outline>();
+        if (_pokerCardVisualConverter == null) _pokerCardVisualConverter = GetComponent<PokerCardVisualConverter>();
         _basePos = _rt.anchoredPosition;
         _baseScale = _rt.localScale;
         _restSibling = _rt.GetSiblingIndex();
-        SetOutlineColor(_isSelected ? selectedOutlineColor : defaultOutlineColor);
         InitializeIdleRotation();
+        SyncSelectionOutline();
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (_rt == null) return;
+        if (PokerHandDeckManager.IsInteractionLocked) return;
         _pointerInside = true;
         if (_isSelected) return;
 
@@ -117,6 +117,7 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
     public void OnPointerClick(PointerEventData eventData)
     {
         if (_rt == null) return;
+        if (PokerHandDeckManager.IsInteractionLocked) return;
 
         if (_isSelected)
         {
@@ -149,7 +150,10 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
     {
         var group = _rt.parent;
         if (group == null) return false;
-        return _activeSelectionGroup == null || _activeSelectionGroup == group;
+        if (_activeSelectionGroup != null && _activeSelectionGroup != group)
+            return false;
+
+        return GetSelectedCount(group) < MaxSelectableCardsPerGroup;
     }
 
     static void SetSelectedCount(Transform parent, int delta)
@@ -174,7 +178,7 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         _isSelected = true;
         _activeSelectionGroup = _rt.parent;
         SetSelectedCount(_rt.parent, +1);
-        SetOutlineColor(selectedOutlineColor);
+        SyncSelectionOutline();
 
         if (!_isHovered)
         {
@@ -194,8 +198,7 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         SetSelectedCount(_rt.parent, -1);
         if (GetSelectedCount(_rt.parent) == 0 && _activeSelectionGroup == _rt.parent)
             _activeSelectionGroup = null;
-
-        SetOutlineColor(defaultOutlineColor);
+        SyncSelectionOutline();
 
         if (!_pointerInside)
         {
@@ -250,6 +253,7 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
 
         _isSelected = false;
         _pointerInside = false;
+        SyncSelectionOutline();
 
         if (_isHovered)
         {
@@ -262,10 +266,17 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
             _activeSelectionGroup = null;
 
         _animating = false;
-        SetOutlineColor(defaultOutlineColor);
 
         if (sourceParent != null)
             ApplyBaseOrdering(sourceParent);
+    }
+
+    void SyncSelectionOutline()
+    {
+        if (_pokerCardVisualConverter == null)
+            return;
+
+        _pokerCardVisualConverter.SetRedOutline(_isSelected);
     }
 
     public void RefreshBaseSnapshot()
@@ -313,12 +324,6 @@ public class CardHoverFocus : MonoBehaviour, IPointerEnterHandler, IPointerExitH
     {
         if (parent == null) return;
         ApplyBaseOrdering(parent);
-    }
-
-    void SetOutlineColor(Color color)
-    {
-        if (_outline == null) return;
-        _outline.effectColor = color;
     }
 
     void BeginAnim(Vector2 fromPos, Vector2 toPos, Vector3 fromScale, Vector3 toScale, int sibling, float duration)
