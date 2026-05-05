@@ -36,7 +36,7 @@ Read the /unity-initial-setup skill for detailed installation instructions.
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `componentNames` | `string` | Yes | Full name of the Component. For multiple components, separate with commas. |
+| `componentNames` | `any` | Yes | Full name of the Component. It should include full namespace path and the class name. |
 | `gameObjectRef` | `any` | Yes | Find GameObject in opened Prefab or in the active Scene. |
 
 ### Input JSON Schema
@@ -46,13 +46,19 @@ Read the /unity-initial-setup skill for detailed installation instructions.
   "type": "object",
   "properties": {
     "componentNames": {
-      "type": "string"
+      "$ref": "#/$defs/System.String[]"
     },
     "gameObjectRef": {
       "$ref": "#/$defs/com.IvanMurzak.Unity.MCP.Runtime.Data.GameObjectRef"
     }
   },
   "$defs": {
+    "System.String[]": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "System.Type": {
       "type": "string"
     },
@@ -149,16 +155,20 @@ Read the /unity-initial-setup skill for detailed installation instructions.
       "type": "object",
       "properties": {
         "AddedComponents": {
-          "$ref": "#/$defs/System.Collections.Generic.List<com.IvanMurzak.Unity.MCP.Runtime.Data.ComponentDataShallow>"
+          "$ref": "#/$defs/System.Collections.Generic.List<com.IvanMurzak.Unity.MCP.Runtime.Data.ComponentDataShallow>",
+          "description": "List of successfully added components."
         },
         "Messages": {
-          "$ref": "#/$defs/System.Collections.Generic.List<System.String>"
+          "$ref": "#/$defs/System.Collections.Generic.List<System.String>",
+          "description": "List of success messages for added components."
         },
         "Warnings": {
-          "$ref": "#/$defs/System.Collections.Generic.List<System.String>"
+          "$ref": "#/$defs/System.Collections.Generic.List<System.String>",
+          "description": "List of warnings encountered during component addition."
         },
         "Errors": {
-          "$ref": "#/$defs/System.Collections.Generic.List<System.String>"
+          "$ref": "#/$defs/System.Collections.Generic.List<System.String>",
+          "description": "List of errors encountered during component addition."
         }
       }
     }

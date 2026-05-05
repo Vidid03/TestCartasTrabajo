@@ -38,7 +38,7 @@ Read the /unity-initial-setup skill for detailed installation instructions.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `filter` | `string` | No | The filter string can contain search data. Could be empty. Name: Filter assets by their filename (without extension). Words separated by whitespace are treated as separate name searches. Labels (l:): Assets can have labels attached to them. Use 'l:' before each label. Types (t:): Find assets based on explicitly identified types. Use 't:' keyword. Available types: AnimationClip, AudioClip, AudioMixer, ComputeShader, Font, GUISkin, Material, Mesh, Model, PhysicMaterial, Prefab, Scene, Script, Shader, Sprite, Texture, VideoClip, VisualEffectAsset, VisualEffectSubgraph. AssetBundles (b:): Find assets which are part of an Asset bundle. Area (a:): Find assets in a specific area. Valid values are 'all', 'assets', and 'packages'. Globbing (glob:): Use globbing to match specific rules. Note: Searching is case insensitive. |
-| `searchInFolders` | `string` | No | The folders where the search will start. If null or empty, the search will be performed in all folders. For multiple folders, separate paths with commas. |
+| `searchInFolders` | `any` | No | The folders where the search will start. If null, the search will be performed in all folders. |
 | `maxResults` | `integer` | No | Maximum number of assets to return. If the number of found assets exceeds this limit, the result will be truncated. |
 
 ### Input JSON Schema
@@ -51,10 +51,18 @@ Read the /unity-initial-setup skill for detailed installation instructions.
       "type": "string"
     },
     "searchInFolders": {
-      "type": "string"
+      "$ref": "#/$defs/System.String[]"
     },
     "maxResults": {
       "type": "integer"
+    }
+  },
+  "$defs": {
+    "System.String[]": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   }
 }
